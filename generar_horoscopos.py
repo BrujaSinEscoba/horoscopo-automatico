@@ -1,21 +1,34 @@
+import os
 import requests
 import json
 import datetime
-import os
 
 # --- CONFIGURACIÓN DESDE LA "CAJA FUERTE" (SECRETS) ---
 API_KEY_OPENAI = os.getenv("OPENAI_API_KEY")
 WP_USER = os.getenv("WP_USER")
 WP_PASS = os.getenv("WP_PASS")
 
-# URLs fijas
+# URLs y Configuración fija
 WP_URL = "https://www.brujasinescoba.com/wp-json/wp/v2/pages"
 PARENT_ID = 61
 
-SIGNOS = [
-    "Aries", "Tauro", "Géminis", "Cáncer", "Leo", "Virgo", 
-    "Libra", "Escorpio", "Sagitario", "Capricornio", "Acuario", "Piscis"
-]
+# Diccionario de imágenes de AI Puffer
+IMAGENES_SIGNOS = {
+    "Aries": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Aries.jpeg",
+    "Tauro": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Tauro.jpeg",
+    "Géminis": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Geminis.jpeg",
+    "Cáncer": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Cancer.jpeg",
+    "Leo": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Leo.jpeg",
+    "Virgo": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Virgo.jpeg",
+    "Libra": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Libra.jpeg",
+    "Escorpio": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Escorpio.jpeg",
+    "Sagitario": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Sagitario.jpeg",
+    "Capricornio": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Capricornio.jpeg",
+    "Acuario": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Acuario.jpeg",
+    "Piscis": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Piscis.jpeg"
+}
+
+SIGNOS = list(IMAGENES_SIGNOS.keys())
 
 # Fecha automática en español
 meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
@@ -33,8 +46,6 @@ def limpieza_total_segura():
                     p_id = p['id']
                     requests.delete(f"{WP_URL}/{p_id}?force=true", auth=(WP_USER, WP_PASS))
                     print(f"🗑️ Borrado con éxito: {p['slug']}")
-        else:
-            print(f"⚠️ Error al acceder a WP para limpiar: {response.status_code}")
     except Exception as e:
         print(f"❌ Error en limpieza: {e}")
 
@@ -42,6 +53,7 @@ def generar_contenido(signo):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
+    # TU PROMPT ORIGINAL (Recuperado al 100%)
     prompt = f"""Escribe el horóscopo para el signo {signo} para el día {FECHA_HOY}.
     
     Instrucciones de formato CRUCIALES:
@@ -67,11 +79,25 @@ def generar_contenido(signo):
     response = requests.post(url, headers=headers, json=data)
     return response.json()['choices'][0]['message']['content']
 
-def subir_a_wordpress(signo, contenido):
+def subir_a_wordpress(signo, texto):
+    # Lógica de la imagen
+    url_img = IMAGENES_SIGNOS[signo]
+    alt_text = f"Ilustración del signo {signo} - Bruja Sin Escoba"
+    
+    html_imagen = (
+        f'<div style="text-align: center; margin-bottom: 25px;">'
+        f'<img src="{url_img}" alt="{alt_text}" style="width: 100%; max-width: 450px; height: auto; border-radius: 15px;">'
+        f'</div>'
+    )
+    
+    # Combinamos imagen + texto (respetando saltos de línea)
+    contenido_final = html_imagen + texto.replace("\n", "<br>")
+    
     slug = f"horoscopo-hoy-{signo.lower()}".replace("é", "e").replace("á", "a").replace("ó", "o")
+    
     payload = {
         "title": f"Horóscopo hoy {signo}",
-        "content": contenido,
+        "content": contenido_final,
         "status": "publish",
         "slug": slug,
         "parent": PARENT_ID,
@@ -84,7 +110,6 @@ def subir_a_wordpress(signo, contenido):
     else:
         print(f"❌ Error en {signo}: {response.status_code}")
 
-# --- EJECUCIÓN ---
 if __name__ == "__main__":
     limpieza_total_segura()
     for signo in SIGNOS:
