@@ -2,8 +2,9 @@ name: Publicar Horoscopo Diario
 
 on:
   schedule:
-    - cron: '1 23 * * *'
-  workflow_dispatch:
+    # Se ejecuta a las 22:37 UTC (23:37 en España invierno / 00:37 verano)
+    - cron: '37 22 * * *'
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -28,4 +29,3 @@ jobs:
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
         run: python generar_horoscopos.py
-        
