@@ -3,7 +3,7 @@ name: Publicar Horoscopo Diario
 on:
   schedule:
     # Se ejecuta todos los días a las 00:00 UTC (01:00 en España)
-    - cron: '0 0 * * *'
+ - cron: '1 23 * * *' -> Runs at UTC 23:01 - Spain 00:01 winter, 01:01 sumer
   workflow_dispatch: # Esto permite darle al botón de "Play" a mano
 
 jobs:
