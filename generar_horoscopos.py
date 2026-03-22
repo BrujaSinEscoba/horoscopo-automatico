@@ -2,13 +2,12 @@ import os
 import requests
 import json
 import datetime
+import pytz  # Librería para que la fecha siempre sea la de España
 
-# --- CONFIGURACIÓN DESDE LA "CAJA FUERTE" (SECRETS) ---
+# --- CONFIGURACIÓN ---
 API_KEY_OPENAI = os.getenv("OPENAI_API_KEY")
 WP_USER = os.getenv("WP_USER")
 WP_PASS = os.getenv("WP_PASS")
-
-# URLs y Configuración fija
 WP_URL = "https://www.brujasinescoba.com/wp-json/wp/v2/pages"
 PARENT_ID = 61
 
@@ -30,10 +29,12 @@ IMAGENES_SIGNOS = {
 
 SIGNOS = list(IMAGENES_SIGNOS.keys())
 
-# Fecha automática en español
+# --- CÁLCULO DE LA FECHA EN ESPAÑA ---
+# Esto evita que si GitHub corre a las 00:01 ponga la fecha de ayer
+tz_espana = pytz.timezone('Europe/Madrid')
+ahora_espana = datetime.datetime.now(tz_espana)
 meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"]
-ahora = datetime.datetime.now()
-FECHA_HOY = f"{ahora.day} de {meses[ahora.month - 1]} de {ahora.year}"
+FECHA_HOY = f"{ahora_espana.day} de {meses[ahora_espana.month - 1]} de {ahora_espana.year}"
 
 def limpieza_total_segura():
     print("🔍 Iniciando limpieza de horóscopos diarios anteriores...")
@@ -46,6 +47,8 @@ def limpieza_total_segura():
                     p_id = p['id']
                     requests.delete(f"{WP_URL}/{p_id}?force=true", auth=(WP_USER, WP_PASS))
                     print(f"🗑️ Borrado con éxito: {p['slug']}")
+        else:
+            print(f"⚠️ Error al acceder a WP para limpiar: {response.status_code}")
     except Exception as e:
         print(f"❌ Error en limpieza: {e}")
 
@@ -53,14 +56,15 @@ def generar_contenido(signo):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
-    # TU PROMPT ORIGINAL (Recuperado al 100%)
+    # PROMPT MEJORADO PARA EVITAR REPETICIONES Y TEXTOS PLANOS
     prompt = f"""Escribe el horóscopo para el signo {signo} para el día {FECHA_HOY}.
     
-    Instrucciones de formato CRUCIALES:
-    1. Escribe el texto en formato PLANO. 
-    2. NO uses asteriscos (**), ni almohadillas (###), ni ningún símbolo de Markdown.
-    3. Escribe la fecha {FECHA_HOY} al inicio en una línea sola.
-    4. Usa exactamente estos títulos con sus emoticonos (en texto plano, sin negritas):
+    INSTRUCCIONES DE ESTILO CRUCIALES:
+    1. Eres la 'Bruja Sin Escoba': sabia, directa, un poco mística y nada predecible.
+    2. EVITA frases trilladas como 'hoy es un buen día para', 'escucha a tu cuerpo' o 'la comunicación es clave'. Sé más original y audaz.
+    3. Escribe en formato PLANO. NO uses asteriscos (**), ni almohadillas (###), ni Markdown.
+    4. Escribe la fecha {FECHA_HOY} al inicio en una línea sola.
+    5. Usa exactamente estos títulos con sus emoticonos (sin negritas):
     
     🍏 Salud y Bienestar
     💰 Finanzas y Carrera
@@ -73,14 +77,14 @@ def generar_contenido(signo):
     data = {
         "model": "gpt-4o-mini",
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.7
+        "temperature": 0.85  # Más creatividad para evitar que los textos sean iguales cada día
     }
     
     response = requests.post(url, headers=headers, json=data)
     return response.json()['choices'][0]['message']['content']
 
-def subir_a_wordpress(signo, texto):
-    # Lógica de la imagen
+def subir_a_wordpress(signo, contenido):
+    # Lógica de la imagen centrada
     url_img = IMAGENES_SIGNOS[signo]
     alt_text = f"Ilustración del signo {signo} - Bruja Sin Escoba"
     
@@ -90,9 +94,10 @@ def subir_a_wordpress(signo, texto):
         f'</div>'
     )
     
-    # Combinamos imagen + texto (respetando saltos de línea)
-    contenido_final = html_imagen + texto.replace("\n", "<br>")
+    # Combinamos imagen + texto (respetando saltos de línea para WordPress)
+    contenido_final = html_imagen + contenido.replace("\n", "<br>")
     
+    # Generamos el slug quitando tildes
     slug = f"horoscopo-hoy-{signo.lower()}".replace("é", "e").replace("á", "a").replace("ó", "o")
     
     payload = {
@@ -110,14 +115,16 @@ def subir_a_wordpress(signo, texto):
     else:
         print(f"❌ Error en {signo}: {response.status_code}")
 
+# --- EJECUCIÓN PRINCIPAL ---
 if __name__ == "__main__":
     limpieza_total_segura()
+    
     for signo in SIGNOS:
-        print(f"Generando {signo}...")
+        print(f"🔮 Generando y publicando {signo}...")
         try:
             texto = generar_contenido(signo)
             subir_a_wordpress(signo, texto)
         except Exception as e:
-            print(f"❌ Error con {signo}: {e}")
+            print(f"❌ Error crítico con {signo}: {e}")
     
-    print("\n✨ ¡Proceso finalizado!")
+    print("\n✨ ¡Proceso finalizado con éxito!")
