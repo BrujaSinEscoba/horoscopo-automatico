@@ -34,94 +34,53 @@ meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto
 FECHA_HOY = f"{ahora_espana.day} de {meses[ahora_espana.month - 1]} de {ahora_espana.year}"
 
 def obtener_clima_astral():
-    """La IA actúa como astrónoma para darnos la posición real de los planetas hoy"""
-    print("🔭 Consultando las efemérides planetarias...")
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
-    
-    prompt = f"""Hoy es {FECHA_HOY}. Actúa como un motor de efemérides astronómicas. 
-    Dime brevemente para esta fecha:
-    1. Fase Lunar y en qué signo está la Luna.
-    2. Posición del Sol (Signo).
-    3. Planetas retrógrados (Mercurio, Venus, Marte, Júpiter, Saturno).
-    4. Tránsitos o aspectos importantes de hoy (ej: conjunciones o cuadraturas).
-    Sé técnico y preciso."""
-
-    data = {
-        "model": "gpt-4o-mini",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()['choices'][0]['message']['content']
+    prompt = f"Dime la Fase Lunar, posición del Sol y planetas retrógrados para el {FECHA_HOY}. Sé preciso."
+    data = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0}
+    return requests.post(url, headers=headers, json=data).json()['choices'][0]['message']['content']
 
 def limpieza_total_segura():
-    print("🔍 Limpiando horóscopos anteriores...")
     try:
         response = requests.get(f"{WP_URL}?per_page=50", auth=(WP_USER, WP_PASS))
         if response.status_code == 200:
             for p in response.json():
                 if p['slug'].startswith("horoscopo-hoy-"):
                     requests.delete(f"{WP_URL}/{p['id']}?force=true", auth=(WP_USER, WP_PASS))
-    except Exception as e: print(f"❌ Error limpieza: {e}")
+    except Exception as e: print(f"Error: {e}")
 
-def generar_contenido(signo, clima_astral):
+def generar_contenido(signo, clima):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
-    prompt = f"""Eres la 'Bruja Sin Escoba'. Escribe el horóscopo para {signo} del día {FECHA_HOY}.
-    
-    CONTEXTO ASTRAL REAL DE HOY:
-    {clima_astral}
-    
-    REGLAS DE ORO:
-    - Usa el contexto astral anterior para que tus predicciones sean reales y profesionales.
-    - No seas genérica. Si un planeta está retrógrado, explica cómo afecta a {signo} específicamente.
-    - Tono sabio, directo y místico. Sin intro ni despedida.
-    - Formato PLANO (sin negritas ni asteriscos).
-    - Títulos exactos con sus iconos: 🍏 Salud y Bienestar, 💰 Finanzas y Carrera, ❤️ Amor y Relaciones, 🔮 Mensaje del Oráculo.
-    - Extensión: 400 palabras."""
+    # Hemos añadido: "Usa un lenguaje místico pero con garra, evita sonar como un libro de texto"
+    prompt = f"""Eres la 'Bruja Sin Escoba'. Horóscopo para {signo} del {FECHA_HOY}.
+    CONTEXTO ASTRAL: {clima}
+    INSTRUCCIONES:
+    - Traduce los tránsitos planetarios a consejos prácticos y audaces.
+    - No seas aburrida ni académica. Usa un tono místico, sabio y un pelín irónico.
+    - Formato PLANO (sin negritas). 
+    - Títulos: 🍏 Salud y Bienestar, 💰 Finanzas y Carrera, ❤️ Amor y Relaciones, 🔮 Mensaje del Oráculo.
+    - 400 palabras."""
 
-    data = {
-        "model": "gpt-4o-mini",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.85
-    }
-    
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()['choices'][0]['message']['content']
+    data = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}], "temperature": 0.85}
+    return requests.post(url, headers=headers, json=data).json()['choices'][0]['message']['content']
 
 def subir_a_wordpress(signo, contenido):
     url_img = IMAGENES_SIGNOS[signo]
     html_imagen = f'<div style="text-align: center; margin-bottom: 25px;"><img src="{url_img}" style="width: 100%; max-width: 450px; border-radius: 15px;"></div>'
-    
-    # Ponemos la fecha arriba para que el lector sepa de qué día es
-    fecha_html = f'<p style="text-align:center; font-weight:bold;">{FECHA_HOY}</p>'
-    contenido_final = html_imagen + fecha_html + contenido.replace("\n", "<br>")
-    
+    contenido_final = html_imagen + f'<p style="text-align:center;"><b>{FECHA_HOY}</b></p>' + contenido.replace("\n", "<br>")
     slug = f"horoscopo-hoy-{signo.lower()}".replace("é", "e").replace("á", "a").replace("ó", "o")
-    payload = {
-        "title": f"Horóscopo hoy {signo}",
-        "content": contenido_final,
-        "status": "publish",
-        "slug": slug,
-        "parent": PARENT_ID
-    }
+    payload = {"title": f"Horóscopo hoy {signo}", "content": contenido_final, "status": "publish", "slug": slug, "parent": PARENT_ID}
     requests.post(WP_URL, json=payload, auth=(WP_USER, WP_PASS))
 
 if __name__ == "__main__":
     limpieza_total_segura()
-    # PASO 1: Miramos el cielo
     clima = obtener_clima_astral()
-    print(f"🌌 El cielo hoy dice:\n{clima}\n")
-    
-    # PASO 2: Generamos cada signo basado en el cielo
     for signo in SIGNOS:
-        print(f"🔮 Publicando {signo} con rigor astral...")
+        print(f"Publicando {signo}...")
         try:
             texto = generar_contenido(signo, clima)
             subir_a_wordpress(signo, texto)
-        except Exception as e: print(f"❌ Error {signo}: {e}")
-        
-    print("\n✨ ¡Proceso finalizado con éxito!")
+        except Exception as e: print(f"Error {signo}: {e}")
+    print("Finalizado.")
