@@ -9,18 +9,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      # Esta línea es la que elimina el aviso de Node.js
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: false
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
+        with:
+          # Esto ayuda a evitar avisos de versiones antiguas
+          persist-credentials: false
 
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
 
       - name: Instalar librerias
         run: |
@@ -32,4 +31,6 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
+          # Forzamos a que ignore el aviso de Node 20
+          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         run: python generar_horoscopos.py
