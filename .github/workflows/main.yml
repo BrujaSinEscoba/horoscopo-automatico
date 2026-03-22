@@ -2,14 +2,14 @@ name: Publicar Horoscopo Diario
 
 on:
   schedule:
-    - cron: '37 23 * * *'
+    # 23:20 UTC equivale a las 00:20 en España (Madrid)
+    - cron: '20 23 * * *'
   workflow_dispatch: 
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Forzamos Node 24 para que GitHub deje de mostrar el aviso
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Descargar codigo
@@ -31,3 +31,4 @@ jobs:
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
         run: python generar_horoscopos.py
+        
