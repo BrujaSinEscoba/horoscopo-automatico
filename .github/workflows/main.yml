@@ -2,19 +2,18 @@ name: Publicar Horoscopo Diario
 
 on:
   schedule:
-    # Se ejecuta a las 23:37 UTC (00:37 en España)
     - cron: '37 23 * * *'
   workflow_dispatch: 
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Forzamos Node 24 para que GitHub deje de mostrar el aviso
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
-        with:
-          # Esto ayuda a evitar avisos de versiones antiguas
-          persist-credentials: false
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -31,6 +30,4 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
-          # Forzamos a que ignore el aviso de Node 20
-          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
         run: python generar_horoscopos.py
