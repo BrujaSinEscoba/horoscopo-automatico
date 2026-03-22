@@ -2,8 +2,8 @@ name: Publicar Horoscopo Diario
 
 on:
   schedule:
-    # Se ejecuta a las 22:37 UTC (23:37 en España invierno / 00:37 verano)
-    - cron: '37 22 * * *'
+    # Se ejecuta a las 23:37 UTC (00:37 en España)
+    - cron: '37 23 * * *'
   workflow_dispatch: 
 
 jobs:
@@ -16,16 +16,18 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.11'
 
       - name: Instalar librerias
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pytz
 
       - name: Ejecutar script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
+          # Forzamos Node 24 para evitar el aviso amarillo
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: python generar_horoscopos.py
