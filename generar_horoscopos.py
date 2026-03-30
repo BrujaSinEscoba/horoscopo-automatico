@@ -10,7 +10,7 @@ API_KEY_OPENAI = os.getenv("OPENAI_API_KEY")
 WP_USER = os.getenv("WP_USER")
 WP_PASS = os.getenv("WP_PASS")
 WP_URL = "https://www.brujasinescoba.com/wp-json/wp/v2/pages"
-PARENT_ID = 61
+PARENT_ID = 9999
 
 IMAGENES_SIGNOS = {
     "Aries": "https://www.brujasinescoba.com/wp-content/uploads/2026/03/Aries.jpeg",
