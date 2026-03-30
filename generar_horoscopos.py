@@ -8,7 +8,7 @@ import pytz
 API_KEY_OPENAI = os.getenv("OPENAI_API_KEY")
 WP_USER = os.getenv("WP_USER")
 WP_PASS = os.getenv("WP_PASS")
-WP_URL = "https://www.brujasinescoba.com/wp-json/wp/v2/pages"
+WP_URL = "ERROR-PRUEBA.com"
 PARENT_ID = 61
 
 IMAGENES_SIGNOS = {
