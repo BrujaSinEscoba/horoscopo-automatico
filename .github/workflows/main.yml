@@ -2,15 +2,12 @@ name: Publicar Horoscopo Diario
 
 on:
   schedule:
-    # 23:20 UTC equivale a las 00:20 en España (Madrid)
     - cron: '20 23 * * *'
   workflow_dispatch: 
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
@@ -26,9 +23,28 @@ jobs:
           pip install requests pytz
 
       - name: Ejecutar script
+        id: run_script
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           WP_USER: ${{ secrets.WP_USER }}
           WP_PASS: ${{ secrets.WP_PASS }}
         run: python generar_horoscopos.py
-        
+
+      # ESTA ES TU ALARMA PERSONALIZADA POR GMAIL
+      - name: Enviar Email de Error
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "🚨 ERROR CRÍTICO: Horóscopo Bruja Sin Escoba"
+          to: info.brujasinescoba@gmail.com
+          from: "Robot Bruja Sin Escoba"
+          body: |
+            Hola,
+            
+            El script de horóscopos ha fallado hoy. 
+            Por favor, entra en GitHub para ver qué ha pasado:
+            https://github.com/Brujasinescoba/horoscopo-automatico/actions
