@@ -60,12 +60,13 @@ def generar_contenido(signo):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
-    # PROMPT MEJORADO PARA TEXTOS MÁS LARGOS
-    prompt = (f"Eres la 'Bruja Sin Escoba'. Escribe el horóscopo detallado para {signo} del día {FECHA_HOY}. "
-              f"Usa tu estilo místico, directo, canalla y un poco gamberro. "
-              f"Divide obligatoriamente el texto en tres secciones con títulos en negrita: "
-              f"1. Energía Astral (analiza el día), 2. Amor y Relaciones, 3. La Advertencia de la Bruja. "
-              f"Extensión aproximada: entre 250 y 300 palabras.")
+    # PROMPT SIN LÍMITES Y CON LOS 5 PUNTOS CLAVE
+    prompt = (f"Eres la 'Bruja Sin Escoba'. Escribe el horóscopo completo y detallado para {signo} del día {FECHA_HOY}. "
+              f"Tu estilo es místico, directo, canalla y sin pelos en la lengua. "
+              f"Es fundamental que desarrolles en profundidad estos 5 puntos, usando títulos en negrita para cada uno: "
+              f"1. Energía General del Día, 2. Amor y Relaciones, 3. Trabajo y Dinero, 4. Salud y Bienestar, "
+              f"5. La Advertencia Final de la Bruja. "
+              f"No te cortes con la extensión, tómate el tiempo necesario para cada punto.")
     
     data = {
         "model": "gpt-4o-mini",
@@ -107,4 +108,4 @@ if __name__ == "__main__":
         print(f"🔮 Procesando {signo}...")
         texto = generar_contenido(signo)
         subir_a_wordpress(signo, texto)
-    print(f"\n✨ ¡Proceso finalizado con éxito! La Bruja ha vuelto con fuerza.")
+    print(f"\n✨ ¡Proceso finalizado! La Bruja ha hablado largo y tendido.")
