@@ -38,7 +38,6 @@ FECHA_HOY = f"{ahora_madrid.day} de {meses[ahora_madrid.month - 1]} de {ahora_ma
 def limpieza_total_segura():
     print(f"🔍 Limpiando horóscopos anteriores...")
     try:
-        # Buscamos las páginas existentes
         response = requests.get(f"{WP_URL}?per_page=100", auth=(WP_USER, WP_PASS))
         if response.status_code != 200:
             print(f"❌ Error conectando a WP: {response.status_code}")
@@ -46,7 +45,6 @@ def limpieza_total_segura():
             
         paginas = response.json()
         for p in paginas:
-            # Si el slug empieza por horoscopo-hoy-, la borramos de la papelera directamente
             if p['slug'].startswith("horoscopo-hoy-"):
                 res = requests.delete(f"{WP_URL}/{p['id']}?force=true", auth=(WP_USER, WP_PASS))
                 if res.status_code == 200:
@@ -62,9 +60,12 @@ def generar_contenido(signo):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
-    prompt = (f"Eres la 'Bruja Sin Escoba'. Escribe el horóscopo para {signo} del día {FECHA_HOY}. "
-              f"Usa un tono místico, directo y un poco gamberro. No uses introducciones aburridas. "
-              f"Máximo 100 palabras.")
+    # PROMPT MEJORADO PARA TEXTOS MÁS LARGOS
+    prompt = (f"Eres la 'Bruja Sin Escoba'. Escribe el horóscopo detallado para {signo} del día {FECHA_HOY}. "
+              f"Usa tu estilo místico, directo, canalla y un poco gamberro. "
+              f"Divide obligatoriamente el texto en tres secciones con títulos en negrita: "
+              f"1. Energía Astral (analiza el día), 2. Amor y Relaciones, 3. La Advertencia de la Bruja. "
+              f"Extensión aproximada: entre 250 y 300 palabras.")
     
     data = {
         "model": "gpt-4o-mini",
@@ -81,11 +82,10 @@ def generar_contenido(signo):
 
 def subir_a_wordpress(signo, contenido):
     url_img = IMAGENES_SIGNOS[signo]
-    # Limpiamos tildes para el slug
     signo_url = signo.lower().replace("é", "e").replace("á", "a").replace("ó", "o")
     
-    html_imagen = f'<div style="text-align: center;"><img src="{url_img}" style="max-width: 450px; border-radius: 10px;"></div>'
-    contenido_final = html_imagen + f'<p style="text-align: center;"><b>{FECHA_HOY}</b></p>' + contenido.replace("\n", "<br>")
+    html_imagen = f'<div style="text-align: center; margin-bottom: 20px;"><img src="{url_img}" style="max-width: 450px; border-radius: 15px; box-shadow: 0px 4px 15px rgba(0,0,0,0.3);"></div>'
+    contenido_final = html_imagen + f'<p style="text-align: center; font-size: 1.2em;"><b>{FECHA_HOY}</b></p>' + contenido.replace("\n", "<br>")
     
     payload = {
         "title": f"Horóscopo hoy {signo}",
@@ -97,7 +97,7 @@ def subir_a_wordpress(signo, contenido):
     
     res = requests.post(WP_URL, json=payload, auth=(WP_USER, WP_PASS))
     if res.status_code != 201:
-        print(f"❌ Error subiendo {signo}: {res.status_code} - {res.text}")
+        print(f"❌ Error subiendo {signo}: {res.status_code}")
         sys.exit(1)
     print(f"✅ {signo} publicado con éxito.")
 
@@ -107,4 +107,4 @@ if __name__ == "__main__":
         print(f"🔮 Procesando {signo}...")
         texto = generar_contenido(signo)
         subir_a_wordpress(signo, texto)
-    print(f"\n✨ ¡Proceso finalizado con éxito! La Bruja ha terminado su trabajo.")
+    print(f"\n✨ ¡Proceso finalizado con éxito! La Bruja ha vuelto con fuerza.")
