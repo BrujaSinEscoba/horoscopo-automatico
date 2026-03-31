@@ -60,13 +60,12 @@ def generar_contenido(signo):
     url = "https://api.openai.com/v1/chat/completions"
     headers = {"Authorization": f"Bearer {API_KEY_OPENAI}", "Content-Type": "application/json"}
     
-    # PROMPT SIN LÍMITES Y CON LOS 5 PUNTOS CLAVE
     prompt = (f"Eres la 'Bruja Sin Escoba'. Escribe el horóscopo completo y detallado para {signo} del día {FECHA_HOY}. "
               f"Tu estilo es místico, directo, canalla y sin pelos en la lengua. "
-              f"Es fundamental que desarrolles en profundidad estos 5 puntos, usando títulos en negrita para cada uno: "
+              f"Desarrolla en profundidad estos 5 puntos, usando títulos en negrita para cada uno: "
               f"1. Energía General del Día, 2. Amor y Relaciones, 3. Trabajo y Dinero, 4. Salud y Bienestar, "
               f"5. La Advertencia Final de la Bruja. "
-              f"No te cortes con la extensión, tómate el tiempo necesario para cada punto.")
+              f"No hay límite de palabras, tómate el espacio que necesites.")
     
     data = {
         "model": "gpt-4o-mini",
@@ -85,7 +84,9 @@ def subir_a_wordpress(signo, contenido):
     url_img = IMAGENES_SIGNOS[signo]
     signo_url = signo.lower().replace("é", "e").replace("á", "a").replace("ó", "o")
     
-    html_imagen = f'<div style="text-align: center; margin-bottom: 20px;"><img src="{url_img}" style="max-width: 450px; border-radius: 15px; box-shadow: 0px 4px 15px rgba(0,0,0,0.3);"></div>'
+    # AJUSTE PARA MÓVILES: width: 100% y max-width: 450px
+    html_imagen = f'<div style="text-align: center; margin-bottom: 20px;"><img src="{url_img}" style="width: 100%; max-width: 450px; height: auto; border-radius: 15px; box-shadow: 0px 4px 15px rgba(0,0,0,0.3);"></div>'
+    
     contenido_final = html_imagen + f'<p style="text-align: center; font-size: 1.2em;"><b>{FECHA_HOY}</b></p>' + contenido.replace("\n", "<br>")
     
     payload = {
@@ -108,4 +109,4 @@ if __name__ == "__main__":
         print(f"🔮 Procesando {signo}...")
         texto = generar_contenido(signo)
         subir_a_wordpress(signo, texto)
-    print(f"\n✨ ¡Proceso finalizado! La Bruja ha hablado largo y tendido.")
+    print(f"\n✨ ¡Proceso finalizado! Todo listo y optimizado.")
